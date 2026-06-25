@@ -1,0 +1,88 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getPublishedPosts, getPostBySlug } from '../../lib/notion';
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts();
+  return posts.map((p) => ({ params: { slug: p.slug } }));
+}
+
+const { slug } = Astro.params;
+const post = await getPostBySlug(slug!);
+if (!post) return Astro.redirect('/404');
+---
+
+<Layout title={`${post.title} · Random Engineer Notes`}>
+	<article class="article">
+		<a href="/#notes" class="back-link">&larr; all notes</a>
+
+		<div class="article-meta">
+			<span class="article-date">{post.date}</span>
+			<span class="article-dot">&middot;</span>
+			<span class="article-read">{post.read}</span>
+		</div>
+
+		<h1 class="article-title">{post.title}</h1>
+		<p class="article-dek">{post.dek}</p>
+
+		{post.tags.length > 0 && (
+			<div class="tag-row article-tags">
+				{post.tags.map((tag) => <span class="tag">{tag}</span>)}
+			</div>
+		)}
+
+		<div class="article-content" set:html={post.contentHtml} />
+	</article>
+</Layout>
+
+<style>
+	.article { max-width: 720px; margin: 0 auto; padding: 54px 0 70px; }
+	.back-link {
+		display: inline-block; margin-bottom: 30px; font-family: 'Space Mono', monospace; font-size: 12.5px;
+		letter-spacing: .03em; color: var(--muted); text-decoration: none;
+	}
+	.back-link:hover { color: var(--accent, #bf5a36); }
+
+	.article-meta {
+		font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text-soft); letter-spacing: .02em;
+		display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+	}
+	.article-dot { color: var(--border-strong); }
+
+	.article-title { margin: 0 0 14px; font-size: 52px; line-height: 1.06; font-weight: 500; letter-spacing: -.02em; text-wrap: balance; }
+	.article-dek { margin: 0; font-size: 21px; line-height: 1.5; color: var(--muted); }
+
+	.article-tags { margin-top: 20px; margin-bottom: 0; }
+
+	.article-content {
+		margin-top: 44px; padding-top: 36px; border-top: 1px solid var(--border);
+		font-size: 19px; line-height: 1.7; color: var(--ink);
+	}
+	.article-content :global(h1),
+	.article-content :global(h2),
+	.article-content :global(h3) {
+		font-weight: 500; letter-spacing: -.012em; margin: 1.6em 0 .6em;
+	}
+	.article-content :global(h2) { font-size: 30px; }
+	.article-content :global(h3) { font-size: 24px; }
+	.article-content :global(p) { margin: 0 0 1.2em; }
+	.article-content :global(a) { color: var(--accent, #bf5a36); text-decoration: underline; }
+	.article-content :global(ul),
+	.article-content :global(ol) { margin: 0 0 1.2em; padding-left: 1.4em; }
+	.article-content :global(li) { margin-bottom: .4em; }
+	.article-content :global(blockquote) {
+		margin: 0 0 1.2em; padding: 4px 0 4px 20px; border-left: 3px solid var(--accent, #bf5a36);
+		color: var(--muted); font-style: italic;
+	}
+	.article-content :global(code) {
+		font-family: 'Space Mono', monospace; font-size: .85em; background: var(--surface-chip);
+		padding: .15em .4em; border-radius: 2px;
+	}
+	.article-content :global(pre) {
+		background: #2c2620; color: #f4ecdb; padding: 18px 20px; border-radius: 3px;
+		overflow-x: auto; margin: 0 0 1.4em;
+	}
+	.article-content :global(pre code) { background: none; padding: 0; }
+	.article-content :global(img) { max-width: 100%; border-radius: 3px; margin: 1.4em 0; }
+	.article-content :global(hr) { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+</style>

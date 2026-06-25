@@ -1,434 +1,162 @@
 ---
-const ACCENT = '#bf5a36';
+import Layout from '../layouts/Layout.astro';
+import { getPublishedPosts, getDeskItems } from '../lib/notion';
 
-const start = new Date('2009-01-01').getTime();
+const start = new Date('2015-01-01').getTime();
 const days = Math.floor((Date.now() - start) / 86400000).toLocaleString('en-US');
 
-const rawNotes = [
-  { title: 'Boring infrastructure is a feature', dek: 'Why I optimize for systems that are forgettable — and the quiet discipline it takes to keep them that way.', date: 'Jun 18, 2026', read: '6 min', tags: ['infra', 'ops', 'essays'] },
-  { title: 'Kubernetes is a database pretending to be an orchestrator', dek: 'A long-standing suspicion, finally written down after one too many etcd incidents.', date: 'Jun 09, 2026', read: '9 min', tags: ['kubernetes', 'etcd'] },
-  { title: 'The runbook nobody reads', dek: 'Docs rot the moment you write them. Here is how I keep on-call runbooks alive and honest.', date: 'May 27, 2026', read: '5 min', tags: ['on-call', 'process'] },
-  { title: 'Sixteen years of on-call, in numbers', dek: 'Pages, postmortems, and the slow art of learning to sleep through the night again.', date: 'May 14, 2026', read: '7 min', tags: ['career', 'reliability'] },
-  { title: 'On the quiet cost of YAML', dek: 'We chose configuration over code and called it simplicity. The bill came due later.', date: 'Apr 30, 2026', read: '8 min', tags: ['iac', 'yaml', 'essays'] },
-];
+const allPosts = await getPublishedPosts();
+const featured = allPosts[0];
+const rest = allPosts.slice(1, 5);
 
-const notes = rawNotes.map((n, i) => ({
-  ...n,
-  num: String(i + 1).padStart(2, '0'),
-  tagline: n.tags.join('  ·  '),
-}));
-const featured = notes[0];
-const rest = notes.slice(1);
+const deskItems = await getDeskItems();
 
 const tabs = [
-  { id: 'reading', label: 'Reading', kicker: 'books' },
-  { id: 'learning', label: 'Learning', kicker: 'courses' },
-  { id: 'signals', label: 'Signals', kicker: 'feeds' },
-  { id: 'building', label: 'Building', kicker: 'projects' },
+  { id: 'reading', label: 'Reading', kicker: 'books', panelTitle: 'On the nightstand', panelNote: 'what i read before going to sleep' },
+  { id: 'learning', label: 'Learning', kicker: 'courses', panelTitle: 'Currently learning', panelNote: 'sharpening the toolset' },
+  { id: 'signals', label: 'Signals', kicker: 'feeds', panelTitle: 'In the feed', panelNote: 'where i keep an ear to the ground' },
+  { id: 'building', label: 'Building', kicker: 'projects', panelTitle: 'In the workshop', panelNote: 'side projects that keep me honest' },
 ];
-
-const collections = {
-  reading: { title: 'On the nightstand', note: 'what i read between incidents', items: [
-    { name: 'The Phoenix Project', by: 'Kim, Behr & Spafford', meta: 're-read · ★★★★☆' },
-    { name: 'Thinking in Systems', by: 'Donella Meadows', meta: 'in progress' },
-    { name: 'Database Internals', by: 'Alex Petrov', meta: 'reference shelf' },
-    { name: 'Staff Engineer', by: 'Will Larson', meta: 'finished · ★★★★★' },
-  ]},
-  learning: { title: 'Currently learning', note: 'sharpening the toolset', items: [
-    { name: 'Rust for Rustaceans', by: 'self-paced', meta: 'ch. 6 / 12' },
-    { name: 'eBPF & observability', by: 'weekend workshop', meta: 'hands-on' },
-    { name: 'CKA recertification', by: 'cncf', meta: 'exam in august' },
-    { name: 'Postgres internals', by: 'lecture series', meta: 'queued' },
-  ]},
-  signals: { title: 'In the feed', note: 'where i keep an ear to the ground', items: [
-    { name: 'LWN.net', by: 'kernel & linux', meta: 'daily read' },
-    { name: 'Last Week in AWS', by: 'corey quinn', meta: 'weekly' },
-    { name: 'Oxide and Friends', by: 'podcast', meta: 'subscribed' },
-    { name: 'The Morning Paper', by: 'cs papers', meta: 'archive dive' },
-  ]},
-  building: { title: 'In the workshop', note: 'side projects that keep me honest', items: [
-    { name: 'homelab-as-code', by: 'terraform + k3s', meta: 'v0.4 · active' },
-    { name: 'tiny-ci', by: 'a CI server in 200 lines of go', meta: 'experiment' },
-    { name: 'dotfiles', by: '14 years deep', meta: 'always evolving' },
-    { name: 'statuslab', by: 'uptime dashboards', meta: 'paused' },
-  ]},
-};
 ---
 
-<html lang="en">
-<head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<meta name="generator" content={Astro.generator} />
-	<title>Field Notes</title>
-	<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-	<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-</head>
-<body style={`--accent: ${ACCENT}`}>
-	<div class="page">
-		<div class="paper-texture" aria-hidden="true"></div>
+<Layout title="Random Engineer Notes">
+	<section class="masthead">
+		<div class="oncall-badge">Working&#8209;<br />Since&nbsp;'09</div>
 
-		<div class="wrap">
-			<header class="topbar">
-				<div class="brand">
-					<span class="brand-name">~/field-notes</span>
-					<span class="cursor">_</span>
-				</div>
-				<nav class="nav">
-					<a href="#notes" class="nav-link">notes</a>
-					<a href="#desk" class="nav-link">the desk</a>
-					<a href="#about" class="nav-link">about</a>
-					<a href="#" class="rss">
-						<span class="dot dot-green"></span>RSS
-					</a>
-				</nav>
-			</header>
+		<p class="whoami">$ whoami &nbsp;&rarr;&nbsp; <span>Platform Engineer · 16 years Learning and Building multi environment solutions</span></p>
 
-			<section class="masthead">
-				<div class="oncall-badge">ON&#8209;CALL<br />SINCE&nbsp;'09</div>
+		<h1 class="title">Random Engineer<br /><span class="italic">Notes</span><span class="underline"></span></h1>
 
-				<p class="whoami">$ whoami &nbsp;&rarr;&nbsp; <span>devops engineer · 16 years in production</span></p>
+		<p class="subhead">I have spent sixteen years building, learning, building cloud native stuff, and trying to keep production systems quiet and learn how to break and fix stuff at the same time. These are my notes on the unglamorous craft of reliability &mdash; infrastructure and renamed DevOps and Platform Engineering context, the systems we lean on, and the things I&rsquo;ve actually have fun with, among them, taking advantage of my past experience reacting and solving problems at 3 am (Not On Call anymore).</p>
 
-				<h1 class="title">Field<br /><span class="italic">Notes</span><span class="underline"></span></h1>
+		<div class="status-strip">
+			<span class="status-pill status-pill--dark"><span class="dot dot-green-glow"></span>all Learning on the right track</span>
+		</div>
+	</section>
 
-				<p class="subhead">Sixteen years keeping production quiet. These are my notes on the unglamorous craft of reliability &mdash; infrastructure, the systems we lean on, and the things I&rsquo;ve actually run at 3am. No hot takes. Just what held up.</p>
-
-				<div class="status-strip">
-					<span class="status-pill status-pill--dark"><span class="dot dot-green-glow"></span>all systems nominal</span>
-					<span class="status-pill">uptime&nbsp;<b>{days}</b>&nbsp;days</span>
-					<span class="status-pill">last deploy&nbsp;<b>3h&nbsp;ago</b></span>
-					<span class="status-pill">coffee&nbsp;<b class="accent-text">critical</b></span>
-				</div>
-			</section>
-
-			<div class="main-grid">
-				<main id="notes">
-					<div class="section-head">
-						<h2>The Notes</h2>
-						<span class="section-head-meta">tail -f /var/log/thoughts</span>
-					</div>
-
-					<a href="#" class="featured-card">
-						<div class="featured-top">
-							<span class="featured-tag">LATEST</span>
-							<span class="featured-meta">{featured.date} · {featured.read}</span>
-						</div>
-						<h3 class="featured-title">{featured.title}</h3>
-						<p class="featured-dek">{featured.dek}</p>
-						<div class="featured-bottom">
-							<span class="featured-tagline">{featured.tagline}</span>
-							<span class="featured-cta">read note &rarr;</span>
-						</div>
-					</a>
-
-					<div class="notes-list">
-						{rest.map((n) => (
-							<a href="#" class="note-row">
-								<span class="note-num">{n.num}</span>
-								<span class="note-body">
-									<span class="note-title">{n.title}</span>
-									<span class="note-dek">{n.dek}</span>
-									<span class="note-meta">{n.date} &nbsp;·&nbsp; {n.read} &nbsp;·&nbsp; {n.tagline}</span>
-								</span>
-								<span class="note-arrow">&rarr;</span>
-							</a>
-						))}
-					</div>
-
-					<div class="load-more-wrap">
-						<a href="#" class="load-more">load more entries &nbsp;&darr;</a>
-					</div>
-				</main>
-
-				<aside id="desk" class="desk">
-					<div class="section-head section-head--tight">
-						<h2>The Desk</h2>
-						<span class="section-head-meta">what's on it</span>
-					</div>
-
-					<div class="tabs" role="tablist">
-						{tabs.map((tab, i) => (
-							<button
-								type="button"
-								class={`tab-btn${i === 0 ? ' active' : ''}`}
-								data-tab={tab.id}
-								role="tab"
-								aria-selected={i === 0 ? 'true' : 'false'}
-							>
-								<span class="tab-label">{tab.label}</span>
-								<span class="tab-kicker">{tab.kicker}</span>
-							</button>
-						))}
-					</div>
-
-					{tabs.map((tab, i) => {
-						const col = collections[tab.id as keyof typeof collections];
-						return (
-							<div class={`desk-panel${i === 0 ? ' active' : ''}`} data-panel={tab.id} role="tabpanel">
-								<h3 class="panel-title">{col.title}</h3>
-								<p class="panel-note">{col.note}</p>
-								<div class="panel-items">
-									{col.items.map((it) => (
-										<div class="panel-item">
-											<div class="item-name">{it.name}</div>
-											<div class="item-by">{it.by}</div>
-											<div class="item-meta">{it.meta}</div>
-										</div>
-									))}
-								</div>
-							</div>
-						);
-					})}
-
-					<p class="desk-footnote"># updated weekly, mostly on sundays<br /># pinned by hand, like a real corkboard</p>
-				</aside>
+	<div class="main-grid">
+		<main id="notes">
+			<div class="section-head">
+				<h2>The Notes</h2>
+				<span class="section-head-meta">tail -f /var/log/thoughts</span>
 			</div>
 
-			<section id="about" class="about">
-				<div>
-					<div class="section-head section-head--solo"><h2>About the keeper</h2></div>
-					<p class="about-text">I&rsquo;ve spent sixteen years on the unfashionable side of software &mdash; the pagers, the postmortems, the 2am rollbacks. I write here to think out loud about how we keep complex systems boring, humane, and awake-friendly. If something here saves you one bad night of sleep, it did its job.</p>
-					<div class="tag-row">
-						<span class="tag">kubernetes</span>
-						<span class="tag">terraform</span>
-						<span class="tag">observability</span>
-						<span class="tag">linux</span>
-						<span class="tag">incident response</span>
+			{featured && (
+				<a href={`/notes/${featured.slug}`} class="featured-card">
+					<div class="featured-top">
+						<span class="featured-tag">LATEST</span>
+						<span class="featured-meta">{featured.date}</span>
 					</div>
-				</div>
-				<div class="subscribe-card">
-					<p class="subscribe-prompt">$ subscribe --inbox</p>
-					<p class="subscribe-desc">New notes land roughly every other week. No spam, no funnels &mdash; just the writing.</p>
-					<div class="subscribe-row">
-						<input placeholder="you@domain.dev" class="subscribe-input" />
-						<button class="subscribe-btn" type="button">join</button>
+					<h3 class="featured-title">{featured.title}</h3>
+					<p class="featured-dek">{featured.dek}</p>
+					<div class="featured-bottom">
+						<span class="featured-tagline">{featured.tags.join('  ·  ')}</span>
+						<span class="featured-cta">read note &rarr;</span>
 					</div>
-				</div>
-			</section>
+				</a>
+			)}
 
-			<footer class="footer">
-				<span>&copy; 2026 &middot; written in a terminal, served with coffee</span>
-				<span>built by hand &mdash; <span class="accent-text">no templates were harmed</span></span>
-			</footer>
-		</div>
+			<div class="notes-list">
+				{rest.map((n, i) => (
+					<a href={`/notes/${n.slug}`} class="note-row">
+						<span class="note-num">{String(i + 2).padStart(2, '0')}</span>
+						<span class="note-body">
+							<span class="note-title">{n.title}</span>
+							<span class="note-dek">{n.dek}</span>
+							<span class="note-meta">{n.date} &nbsp;·&nbsp; {n.tags.join('  ·  ')}</span>
+						</span>
+						<span class="note-arrow">&rarr;</span>
+					</a>
+				))}
+			</div>
+
+			{allPosts.length > rest.length + 1 && (
+				<div class="load-more-wrap">
+					<a href="/notes" class="load-more">load more entries &nbsp;&darr;</a>
+				</div>
+			)}
+		</main>
+
+		<aside id="desk" class="desk">
+			<div class="section-head section-head--tight">
+				<h2>The Desk</h2>
+				<span class="section-head-meta">what's on it</span>
+			</div>
+
+			<div class="tabs" role="tablist">
+				{tabs.map((tab, i) => (
+					<button
+						type="button"
+						class={`tab-btn${i === 0 ? ' active' : ''}`}
+						data-tab={tab.id}
+						role="tab"
+						aria-selected={i === 0 ? 'true' : 'false'}
+					>
+						<span class="tab-label">{tab.label}</span>
+						<span class="tab-kicker">{tab.kicker}</span>
+					</button>
+				))}
+			</div>
+
+			{tabs.map((tab, i) => {
+				const items = deskItems.filter((item) => item.category === tab.label);
+				return (
+					<div class={`desk-panel${i === 0 ? ' active' : ''}`} data-panel={tab.id} role="tabpanel">
+						<h3 class="panel-title">{tab.panelTitle}</h3>
+						<p class="panel-note">{tab.panelNote}</p>
+						<div class="panel-items">
+							{items.map((it) => (
+								<div class="panel-item">
+									<div class="item-name">{it.name}</div>
+									<div class="item-by">{it.by}</div>
+									<div class="item-meta">{it.meta}</div>
+								</div>
+							))}
+						</div>
+					</div>
+				);
+			})}
+
+			<p class="desk-footnote"># updated weekly, mostly on sundays<br /># pinned by hand, like a real corkboard</p>
+		</aside>
 	</div>
 
-	<script>
-		const tabButtons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
-		const panels = document.querySelectorAll<HTMLDivElement>('.desk-panel');
+	<section id="about" class="about">
+		<div>
+			<div class="section-head section-head--solo"><h2>About the keeper</h2></div>
+			<p class="about-text">I am just a regular random engineer. I have spent sixteen years learning by doing, from customer support, web Development, Cloud Infrastructure, CI/CD, SRE/DevOps stuff (despite I believe job definitions should go beyond labels, and match what you do and what you enjoy doing day to day), and currently I am working as a Platform Engineer. I write here to think out loud about how we keep complex systems boring, humane, and awake-friendly. If something here captures your interest, it did its job.</p>
+			<div class="tag-row">
+				<span class="tag">kubernetes</span>
+				<span class="tag">terraform</span>
+				<span class="tag">observability</span>
+				<span class="tag">linux</span>
+				<span class="tag">incident response</span>
+				<span class="tag">Software Development</span>
+			</div>
+		</div>
+		<!--div class="subscribe-card">
+			<p class="subscribe-prompt">$ subscribe --inbox</p>
+			<p class="subscribe-desc">New notes land roughly every other week. No spam, no funnels just the writing.</p>
+			<div class="subscribe-row">
+				<input placeholder="you@domain.dev" class="subscribe-input" />
+				<button class="subscribe-btn" type="button">join</button>
+			</div>
+		</div-->
+	</section>
+</Layout>
 
-		tabButtons.forEach((btn) => {
-			btn.addEventListener('click', () => {
-				const target = btn.dataset.tab;
-				tabButtons.forEach((b) => {
-					b.classList.toggle('active', b === btn);
-					b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
-				});
-				panels.forEach((p) => p.classList.toggle('active', p.dataset.panel === target));
+<script>
+	const tabButtons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
+	const panels = document.querySelectorAll<HTMLDivElement>('.desk-panel');
+
+	tabButtons.forEach((btn) => {
+		btn.addEventListener('click', () => {
+			const target = btn.dataset.tab;
+			tabButtons.forEach((b) => {
+				b.classList.toggle('active', b === btn);
+				b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
 			});
+			panels.forEach((p) => p.classList.toggle('active', p.dataset.panel === target));
 		});
-	</script>
-</body>
-</html>
-
-<style>
-	* { box-sizing: border-box; }
-	html, body { margin: 0; }
-	body {
-		background: #f0e7d6;
-		-webkit-font-smoothing: antialiased;
-		text-rendering: optimizeLegibility;
-		font-family: Newsreader, Georgia, serif;
-		color: #2c2620;
-	}
-	::selection { background: rgba(191, 90, 54, .22); }
-
-	@keyframes blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: .18; } }
-	@keyframes panelIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-	@keyframes floaty { 0%, 100% { transform: rotate(-7deg) translateY(0); } 50% { transform: rotate(-7deg) translateY(-5px); } }
-	@keyframes drawline { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-
-	.page {
-		position: relative;
-		min-height: 100vh;
-		background: radial-gradient(125% 80% at 50% -12%, #f7f0e2 0%, #f0e7d6 52%, #e9ddc6 100%);
-		overflow-x: hidden;
-	}
-
-	.paper-texture {
-		position: fixed;
-		inset: 0;
-		z-index: 60;
-		pointer-events: none;
-		mix-blend-mode: multiply;
-		opacity: .05;
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-	}
-
-	.wrap { max-width: 1180px; margin: 0 auto; padding: 0 36px; }
-
-	.topbar { display: flex; align-items: center; justify-content: space-between; padding: 26px 0 22px; border-bottom: 1px solid #ddccab; }
-	.brand { display: flex; align-items: baseline; gap: 10px; }
-	.brand-name { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: .02em; color: #2c2620; }
-	.cursor { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--accent, #bf5a36); animation: blink 1.4s steps(1) infinite; }
-
-	.nav { display: flex; align-items: center; gap: 26px; font-family: 'Space Mono', monospace; font-size: 12.5px; letter-spacing: .02em; }
-	.nav-link {
-		color: #5a5046; text-decoration: none;
-		background-image: linear-gradient(transparent 62%, rgba(191, 90, 54, .28) 0);
-		background-size: 0 100%; background-repeat: no-repeat;
-		transition: background-size .3s;
-	}
-	.nav-link:hover { background-size: 100% 100%; color: #2c2620; }
-	.rss {
-		display: flex; align-items: center; gap: 7px;
-		padding: 6px 11px; border: 1px solid #2c2620; border-radius: 2px;
-		color: #2c2620; text-decoration: none;
-	}
-	.rss:hover { background: #2c2620; color: #f4ecdb; }
-
-	.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-	.dot-green { background: #4f9d6b; animation: blink 2.2s steps(1) infinite; }
-	.dot-green-glow { background: #5fb87f; animation: blink 1.8s steps(1) infinite; }
-
-	.masthead { position: relative; padding: 64px 0 30px; }
-	.oncall-badge {
-		position: absolute; top: 44px; right: 6px;
-		font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .12em;
-		color: var(--accent, #bf5a36); border: 2px solid var(--accent, #bf5a36); border-radius: 50%;
-		width: 104px; height: 104px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-		text-align: center; line-height: 1.5; opacity: .85; animation: floaty 6s ease-in-out infinite;
-	}
-	.whoami { margin: 0 0 18px; font-family: 'Space Mono', monospace; font-size: 13px; letter-spacing: .04em; color: var(--accent, #bf5a36); }
-	.whoami span { color: #5a5046; }
-
-	.title { margin: 0; font-size: 96px; line-height: .92; font-weight: 500; letter-spacing: -.03em; }
-	.title .italic { font-style: italic; font-weight: 400; }
-	.title .underline {
-		display: inline-block; width: 62px; height: 14px; margin-left: 18px;
-		background: var(--accent, #bf5a36); border-radius: 40% 60% 50% 45%/60% 50% 55% 45%;
-		transform: rotate(-3deg); transform-origin: left;
-		animation: drawline .7s .2s both cubic-bezier(.2, .8, .2, 1);
-	}
-
-	.subhead { max-width: 560px; margin: 30px 0 0; font-size: 21px; line-height: 1.5; color: #463f37; }
-
-	.status-strip { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 34px; font-family: 'Space Mono', monospace; font-size: 12px; }
-	.status-pill { padding: 8px 13px; background: #f6efe0; border: 1px solid #ddccab; border-radius: 2px; color: #5a5046; display: flex; align-items: center; }
-	.status-pill b { color: #2c2620; }
-	.status-pill--dark { display: flex; align-items: center; gap: 8px; background: #2c2620; color: #f4ecdb; border: none; }
-	.accent-text { color: var(--accent, #bf5a36); }
-
-	.main-grid { display: grid; grid-template-columns: 1fr 372px; gap: 60px; align-items: start; padding: 46px 0 0; }
-
-	.section-head { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #2c2620; padding-bottom: 10px; margin-bottom: 30px; }
-	.section-head--tight { margin-bottom: 16px; gap: 10px; }
-	.section-head--solo { border-bottom: none; padding-bottom: 0; margin-bottom: 16px; justify-content: flex-start; }
-	.section-head h2 { margin: 0; font-size: 15px; font-family: 'Space Mono', monospace; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-	.section-head-meta { font-family: 'Space Mono', monospace; font-size: 12px; color: #8a7d6c; }
-
-	.featured-card {
-		display: block; text-decoration: none; color: inherit;
-		background: #faf4e7; border: 1px solid #e3d4b6; border-radius: 3px;
-		padding: 30px 32px 32px; margin-bottom: 30px;
-		box-shadow: 0 1px 0 #e3d4b6, 6px 8px 24px -16px rgba(44, 38, 32, .5);
-		transition: transform .22s, box-shadow .22s;
-	}
-	.featured-card:hover { transform: translateY(-3px); box-shadow: 0 1px 0 #e3d4b6, 10px 14px 30px -16px rgba(44, 38, 32, .5); }
-	.featured-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-	.featured-tag { font-family: 'Space Mono', monospace; font-size: 10.5px; font-weight: 700; letter-spacing: .1em; color: #faf4e7; background: var(--accent, #bf5a36); padding: 5px 10px; border-radius: 2px; }
-	.featured-meta { font-family: 'Space Mono', monospace; font-size: 12px; color: #8a7d6c; }
-	.featured-title { margin: 0 0 12px; font-size: 38px; line-height: 1.06; font-weight: 500; letter-spacing: -.018em; text-wrap: balance; }
-	.featured-dek { margin: 0 0 18px; font-size: 19px; line-height: 1.5; color: #5a5046; max-width: 60ch; }
-	.featured-bottom { display: flex; align-items: center; justify-content: space-between; }
-	.featured-tagline { font-family: 'Space Mono', monospace; font-size: 11.5px; color: var(--accent, #bf5a36); letter-spacing: .03em; }
-	.featured-cta { font-family: 'Space Mono', monospace; font-size: 13px; color: #2c2620; }
-
-	.notes-list { display: flex; flex-direction: column; }
-	.note-row {
-		display: flex; gap: 22px; align-items: flex-start; text-decoration: none; color: #2c2620;
-		padding: 22px 16px 22px 14px; border-bottom: 1px solid #e0d2b8; border-radius: 3px;
-		transition: transform .2s, background .2s;
-	}
-	.note-row:hover { background: #faf4e7; transform: translateX(7px); color: var(--accent, #bf5a36); }
-	.note-num { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--accent, #bf5a36); padding-top: 7px; min-width: 24px; }
-	.note-body { flex: 1; }
-	.note-title { display: block; font-size: 25px; line-height: 1.18; font-weight: 500; letter-spacing: -.012em; color: inherit; }
-	.note-dek { display: block; margin-top: 7px; font-size: 16.5px; line-height: 1.5; color: #6f6457; }
-	.note-meta { display: block; margin-top: 11px; font-family: 'Space Mono', monospace; font-size: 11.5px; color: #9c8f7c; letter-spacing: .02em; }
-	.note-arrow { font-family: 'Space Mono', monospace; font-size: 18px; color: inherit; padding-top: 5px; }
-
-	.load-more-wrap { text-align: center; padding: 34px 0 4px; }
-	.load-more {
-		font-family: 'Space Mono', monospace; font-size: 12.5px; letter-spacing: .04em; color: #5a5046; text-decoration: none;
-		border: 1px solid #cbb99a; border-radius: 2px; padding: 11px 20px; transition: all .2s; display: inline-block;
-	}
-	.load-more:hover { background: #2c2620; color: #f4ecdb; border-color: #2c2620; }
-
-	.desk { position: sticky; top: 24px; }
-
-	.tabs { display: flex; gap: 6px; align-items: flex-end; margin-bottom: -1px; position: relative; z-index: 2; }
-	.tab-btn {
-		display: flex; flex-direction: column; gap: 1px; align-items: flex-start;
-		padding: 9px 14px; border-radius: 7px 7px 0 0; font-family: 'Space Mono', monospace;
-		cursor: pointer; transition: transform .18s, background .25s, color .25s; text-align: left;
-		background: #ece1cb; color: #8a7d6c; border: 1px solid #ddccab; transform: translateY(3px);
-	}
-	.tab-btn.active { background: #2c2620; color: #f4ecdb; border: 1px solid #2c2620; transform: translateY(0); }
-	.tab-label { font-size: 13px; font-weight: 700; letter-spacing: .01em; }
-	.tab-kicker { font-size: 10px; opacity: .7; }
-
-	.desk-panel {
-		display: none;
-		background: #2c2620; border-radius: 2px 3px 3px 3px; padding: 22px 20px 24px;
-		box-shadow: 8px 12px 30px -18px rgba(44, 38, 32, .7);
-	}
-	.desk-panel.active { display: block; animation: panelIn .5s cubic-bezier(.2, .7, .2, 1) both; }
-	.panel-title { margin: 0 0 4px; font-size: 23px; font-weight: 500; color: #f4ecdb; letter-spacing: -.01em; }
-	.panel-note { margin: 0 0 20px; font-family: 'Space Mono', monospace; font-size: 11.5px; color: #b6a88f; letter-spacing: .02em; }
-	.panel-items { display: flex; flex-direction: column; gap: 11px; }
-	.panel-item {
-		background: #f4ecdb; border-radius: 2px; padding: 14px 15px; transform: rotate(-0.5deg);
-		transition: transform .2s, box-shadow .2s; box-shadow: 0 1px 0 rgba(0, 0, 0, .15);
-	}
-	.panel-item:hover { transform: rotate(0deg) translateY(-2px); box-shadow: 4px 7px 16px -8px rgba(0, 0, 0, .5); }
-	.item-name { font-size: 18px; font-weight: 500; line-height: 1.2; color: #2c2620; letter-spacing: -.01em; }
-	.item-by { margin-top: 3px; font-size: 14px; font-style: italic; color: #7a6f62; }
-	.item-meta { margin-top: 8px; font-family: 'Space Mono', monospace; font-size: 10.5px; letter-spacing: .03em; color: var(--accent, #bf5a36); }
-
-	.desk-footnote { margin: 18px 4px 0; font-family: 'Space Mono', monospace; font-size: 10.5px; color: #9c8f7c; line-height: 1.6; }
-
-	.about { margin-top: 70px; padding: 46px 0 50px; border-top: 2px solid #2c2620; display: grid; grid-template-columns: 1fr 372px; gap: 60px; align-items: start; }
-	.about-text { margin: 0; font-size: 21px; line-height: 1.55; color: #463f37; max-width: 62ch; }
-	.tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; font-family: 'Space Mono', monospace; font-size: 11.5px; }
-	.tag { padding: 7px 12px; background: #f6efe0; border: 1px solid #ddccab; border-radius: 2px; color: #5a5046; }
-
-	.subscribe-card { background: #faf4e7; border: 1px solid #e3d4b6; border-radius: 3px; padding: 24px; box-shadow: 6px 8px 22px -16px rgba(44, 38, 32, .5); }
-	.subscribe-prompt { margin: 0 0 14px; font-family: 'Space Mono', monospace; font-size: 11.5px; letter-spacing: .04em; color: var(--accent, #bf5a36); }
-	.subscribe-desc { margin: 0 0 16px; font-size: 16.5px; line-height: 1.5; color: #5a5046; }
-	.subscribe-row { display: flex; gap: 8px; }
-	.subscribe-input {
-		flex: 1; min-width: 0; font-family: 'Space Mono', monospace; font-size: 13px; padding: 11px 12px;
-		border: 1px solid #d8c8aa; border-radius: 2px; background: #fffaf0; color: #2c2620; outline: none;
-	}
-	.subscribe-btn {
-		font-family: 'Space Mono', monospace; font-size: 12.5px; padding: 11px 16px;
-		background: #2c2620; color: #f4ecdb; border: none; border-radius: 2px; cursor: pointer; transition: background .2s;
-	}
-	.subscribe-btn:hover { background: var(--accent, #bf5a36); }
-
-	.footer {
-		display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
-		padding: 26px 0 50px; border-top: 1px solid #ddccab; font-family: 'Space Mono', monospace; font-size: 11.5px; color: #9c8f7c;
-	}
-
-	@media (max-width: 860px) {
-		.wrap { padding: 0 22px; }
-		.title { font-size: 56px; }
-		.oncall-badge { display: none; }
-		.main-grid, .about { grid-template-columns: 1fr; gap: 40px; }
-		.desk { position: static; }
-	}
-</style>
+	});
+</script>
