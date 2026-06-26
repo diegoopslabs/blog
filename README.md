@@ -87,6 +87,17 @@ The sidebar tabs (Reading / Learning / Signals / Building) pull their items from
 
 **Adding an item:** add a row, set its `Category` to route it into the right tab, and it appears on the next build.
 
+## 🚢 Deploying
+
+The site is hosted on [Firebase Hosting](https://console.firebase.google.com/project/field-notes-blog-csuazan/overview) (project `field-notes-blog-csuazan`). Every push to `main` triggers [.github/workflows/firebase-hosting-merge.yml](.github/workflows/firebase-hosting-merge.yml), which builds the site and deploys `dist/` automatically — no manual steps needed.
+
+To deploy manually instead:
+
+```sh
+npm run build
+firebase deploy --only hosting
+```
+
 ## 👀 Want to learn more?
 
 Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
