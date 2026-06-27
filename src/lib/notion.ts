@@ -82,7 +82,7 @@ function toPostSummary(page: PageObjectResponse): PostSummary {
 
   return {
     pageId: page.id,
-    slug: slugText || slugify(title),
+    slug: slugify(slugText) || slugify(title),
     title,
     dek,
     date,
